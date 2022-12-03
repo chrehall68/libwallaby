@@ -28,6 +28,7 @@
 *.app
 
 build
+documentation
 .DS_Store
 obj-arm-linux-gnueabihf
 deploy
