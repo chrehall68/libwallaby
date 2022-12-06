@@ -15,6 +15,8 @@ project(libwallaby)
 option(no_wallaby "Not a wallaby controller" OFF)
 option(emscripten "Build for use with emscripten (for simulator)" OFF)
 option(with_vision_support "Controls camera support" ON)
+option(build_tests "build the tests" OFF)
+option(build_debian "build the debian stuff" OFF)
 
 option(no_zoobee_wallaby "Not a zoobee wallaby controller" OFF)
 
@@ -113,8 +115,7 @@ endif()
 find_package (Threads)
 
 if(build_python)
-  find_package( PythonInterp 2.7 REQUIRED )
-  find_package( PythonLibs 2.7 REQUIRED )
+  find_package(Python3 REQUIRED)
 endif()
 
 include_directories(${CMAKE_INSTALL_PREFIX}/include)
@@ -149,11 +150,11 @@ file(GLOB SWIG_SOURCES ${BINDINGS}/*.i)
 
 if(build_python)
   find_package(SWIG REQUIRED)
-  find_package(PythonLibs 2.7 REQUIRED)
-  message("${PYTHON_LIBRARY}")
-  set(PYTHON_BINDING_SOURCES ${CMAKE_BINARY_DIR}/kipr_wrap_py.cxx)
-  set(PYTHON_BINDING_LIBRARIES ${PYTHON_LIBRARY})
+  find_package(Python3 REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIR})
+  include_directories(/usr/include/python3.9/)
+  set(PYTHON_BINDING_SOURCES ${CMAKE_BINARY_DIR}/kipr_wrap_py.cxx)
+  set(PYTHON_BINDING_LIBRARIES ${PYTHON_LIBRARIES})
   add_custom_command(COMMAND ${SWIG_EXECUTABLE} -Wall -python -c++ -I${INCLUDE}/kipr -outdir ${LIBRARY_OUTPUT_PATH} -o ${CMAKE_BINARY_DIR}/kipr_wrap_py.cxx ${BINDINGS}/kipr.i
     DEPENDS ${SWIG_SOURCES}
     OUTPUT ${CMAKE_BINARY_DIR}/kipr_wrap_py.cxx ${LIBRARY_OUTPUT_PATH}/kipr.py)
@@ -183,8 +184,8 @@ add_library(kipr SHARED ${SOURCES} ${PIXELTOASTER_SOURCES} ${OBJC_SOURCES} ${WPA
 
 if(with_vision_support)
   link_directories(/opt/vc/lib)
-  target_link_libraries(wallaby ${OpenCV_LIBS} ${JPEG_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} zbar opencv_core opencv_highgui opencv_imgproc avcodec avutil m /opt/vc/lib/libmmal.so /opt/vc/lib/libbcm_host.so swscale)
-  target_link_libraries(kipr ${OpenCV_LIBS} ${JPEG_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} zbar opencv_core opencv_highgui opencv_imgproc avcodec avutil  m /opt/vc/lib/libmmal.so /opt/vc/lib/libbcm_host.so swscale)
+  target_link_libraries(wallaby ${OpenCV_LIBS} ${JPEG_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} zbar opencv_core opencv_highgui opencv_imgproc avcodec avutil m swscale)
+  target_link_libraries(kipr ${OpenCV_LIBS} ${JPEG_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} zbar opencv_core opencv_highgui opencv_imgproc avcodec avutil m swscale)
 endif()
 
 if(USE_ARUCO)
@@ -242,20 +243,25 @@ endif()
 
 
 
+if (build_tests)
+  install(TARGETS ${TESTS} DESTINATION bin/wallaby)
+  install(TARGETS ${TESTS} DESTINATION bin/kipr)
+endif()
 
-install(TARGETS ${TESTS} DESTINATION bin/wallaby)
-install(TARGETS ${TESTS} DESTINATION bin/kipr)
 install(TARGETS kipr DESTINATION lib)
 install(TARGETS wallaby DESTINATION lib)
 install(DIRECTORY ${INCLUDE}/wallaby DESTINATION include)
 install(DIRECTORY ${INCLUDE}/kipr DESTINATION include)
 
-set(CMAKE_INSTALL_PREFIX /usr)
 
-# Install the manpage (appropriate for .deb package)
-# manpage should have -r-wr--r-- or 644 permission (owner r-w, group r--, others r--)
-install(
-	FILES libwallaby.1
-	PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ 
-	DESTINATION ${DESTDIR}${CMAKE_INSTALL_PREFIX}/share/man/man1 
-)
+set(CMAKE_INSTALL_PREFIX /usr/local/)
+
+if(build_debian)
+  # Install the manpage (appropriate for .deb package)
+  # manpage should have -r-wr--r-- or 644 permission (owner r-w, group r--, others r--)
+  install(
+    FILES libwallaby.1
+    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ 
+    DESTINATION ${DESTDIR}${CMAKE_INSTALL_PREFIX}/share/man/man1 
+  )
+endif()
