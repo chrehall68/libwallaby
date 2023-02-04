@@ -15,6 +15,8 @@ if (EMSCRIPTEN)
   option(wasm "Build for WASM dynamic linking" OFF)
 endif()
 
+include_directories(/usr/include/opencv4/)
+
 function(gather_module_objects OUT)
   get_property(KIPR_MODULES GLOBAL PROPERTY kipr_modules)
   message(STATUS "Gathering module objects... ${ARGN}")
@@ -89,9 +91,6 @@ else()
   target_link_libraries(kipr PRIVATE "-Wl,-Bsymbolic" ${STATIC_KIPR_MODULES})
 endif()
 target_link_libraries(kipr INTERFACE ${STATIC_KIPR_MODULES})
-if(not DUMMY)
-  target_link_options(kipr PRIVATE -static-libgcc -static-libstdc++)  # since wombat is still on jessie, needs the latest g++, gcc
-endif()
 
 if (TARGET kipr_python)
   target_link_libraries(kipr PRIVATE kipr_python)

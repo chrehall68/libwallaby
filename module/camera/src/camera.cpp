@@ -3,7 +3,6 @@
 #include "kipr/camera/camera.h"
 #include "kipr/camera/channel.hpp"
 #include "kipr/camera/channel_impl.hpp"
-#include "UDPVideo.hpp"
 
 #include <csetjmp>
 #include <fstream>
@@ -12,6 +11,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/videoio.hpp>
 
 #include "logger.hpp"
 
@@ -53,42 +53,6 @@ using kipr::geometry::Rect;
 extern CvCapture *cvCreateCameraCapture_V4L_K(int index);
 extern CvCapture *cvCreateCameraCapture_V4L_K(const char *deviceName);
 
-class VideoCapture_K : public cv::VideoCapture
-{
-public:
-  VideoCapture_K(const std::string &filename)
-  {
-    open(filename);
-  }
-
-  VideoCapture_K(int device)
-  {
-    open(device);
-  }
-
-  bool open(int device)
-  {
-    if (isOpened())
-      release();
-
-    cap = cvCreateCameraCapture_V4L_K(device);
-    return isOpened();
-  }
-
-  bool open(const std::string &filename)
-  {
-    if (isOpened())
-      release();
-
-    cap = cvCreateCameraCapture_V4L_K(filename.c_str());
-    return isOpened();
-  }
-
-  ~VideoCapture_K()
-  {
-  }
-};
-
 namespace
 {
   unsigned char *bmpBuffer;
@@ -103,8 +67,6 @@ namespace
 
 #define SELECTTIMEOUTSEC 1
 #define SELECTTIMEOUTUSEC 0
-
-
 
 // ConfigPath //
 
@@ -203,7 +165,7 @@ Device::~Device()
 Model Device::getModel() { return this->m_model; }
 
 bool Device::open(const int number, Resolution resolution,
-                          Model model)
+                  Model model)
 {
   // Device already open?
   if (this->isOpen())
@@ -235,7 +197,7 @@ bool Device::open(const int number, Resolution resolution,
   }
   else if (m_model == BLACK_2017)
   {
-    m_cap = new VideoCapture_K(0);
+    m_cap = new cv::VideoCapture(0, cv::CAP_V4L2);
     if (!m_cap->isOpened())
     {
       logger.fatal() << "Failed to open " << device_name;
@@ -260,17 +222,8 @@ bool Device::open(const int number, Resolution resolution,
   }
   else if (m_model == TELLO)
   {
-    m_resolution = TELLO_RES;
-    m_cap = new UdpVideo("0.0.0.0",
-                         11111,
-                         resolutionToWidth(m_resolution),
-                         resolutionToHeight(m_resolution));
-    if (!m_cap->isOpened())
-    {
-      fprintf(stderr, "Failed to open Tello camera (UDP)");
-      return false;
-    }
-    m_connected = true;
+    fprintf(stderr, "Tello unsupported on this build.");
+    return false;
   }
   return true;
 }
@@ -473,15 +426,15 @@ const std::vector<Channel *> &Device::channels() const
 
 Image Device::rawImage() const
 {
-  if (m_impl->image.empty()) return Image();
+  if (m_impl->image.empty())
+    return Image();
   return Image(
-    Image::Type::Bgr888,
-    m_impl->image.cols,
-    m_impl->image.rows,
-    m_impl->image.step,
-    m_impl->image.data,
-    false
-  );
+      Image::Type::Bgr888,
+      m_impl->image.cols,
+      m_impl->image.rows,
+      m_impl->image.step,
+      m_impl->image.data,
+      false);
 }
 
 void Device::setConfig(const Config &config)
@@ -557,8 +510,6 @@ void jpegErrorJmp(j_common_ptr cInfo)
 METHODDEF(void)
 emit_message_suppressed(j_common_ptr cinfo, int msg_level) {}
 
-
-
 cv::Mat decodeJpeg(void *p, int size)
 {
   if (size <= 0)
@@ -618,7 +569,7 @@ cv::Mat decodeJpeg(void *p, int size)
 }
 
 bool Device::initCapDevice(const unsigned width,
-                                   const unsigned height)
+                           const unsigned height)
 {
   if (!this->isOpen())
     return false;
@@ -820,8 +771,6 @@ int Device::readFrame()
   // Success!
   return 1;
 }
-
-
 
 int Device::xioctl(int fh, int request, void *arg)
 {
