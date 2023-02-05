@@ -312,7 +312,9 @@ void create_spin_block(int speed, int angle)
 
 int _create_get_raw_encoders(long *lenc, long *renc)
 {
-	return 0;
+	*lenc = Create::instance()->sensorPacket101()->leftEncoderCounts[0] << 8 | Create::instance()->sensorPacket101()->leftEncoderCounts[1];
+	*renc = Create::instance()->sensorPacket101()->rightEncoderCounts[0] << 8 | Create::instance()->sensorPacket101()->rightEncoderCounts[1];
+	return 1;
 }
 
 int create_load_song(const unsigned char* song, const unsigned char length, const unsigned char num)
