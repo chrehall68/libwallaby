@@ -8,7 +8,8 @@ using namespace kipr::create;
 
 int create_connect()
 {
-	while(!create_connect_once());
+	while (!create_connect_once())
+		;
 	return 0;
 }
 
@@ -94,70 +95,62 @@ int get_create_rcliff()
 
 int get_create_llightbump()
 {
-  return Create::instance()->lightBumpLeft()->value() ? 1 : 0;
+	return Create::instance()->lightBumpLeft()->value() ? 1 : 0;
 }
-
 
 int get_create_lflightbump()
 {
-  return Create::instance()->lightBumpFrontLeft()->value() ? 1 : 0;
+	return Create::instance()->lightBumpFrontLeft()->value() ? 1 : 0;
 }
-
 
 int get_create_lclightbump()
 {
-  return Create::instance()->lightBumpCenterLeft()->value() ? 1 : 0;
+	return Create::instance()->lightBumpCenterLeft()->value() ? 1 : 0;
 }
 
 int get_create_rlightbump()
 {
-  return Create::instance()->lightBumpRight()->value() ? 1 : 0;
+	return Create::instance()->lightBumpRight()->value() ? 1 : 0;
 }
-
 
 int get_create_rflightbump()
 {
-  return Create::instance()->lightBumpFrontRight()->value() ? 1 : 0;
+	return Create::instance()->lightBumpFrontRight()->value() ? 1 : 0;
 }
-
 
 int get_create_rclightbump()
 {
-  return Create::instance()->lightBumpCenterRight()->value() ? 1 : 0;
+	return Create::instance()->lightBumpCenterRight()->value() ? 1 : 0;
 }
 
 int get_create_llightbump_amt()
 {
-  return Create::instance()->lightBumpLeftSignal()->value();
+	return Create::instance()->lightBumpLeftSignal()->value();
 }
-
 
 int get_create_lflightbump_amt()
 {
-  return Create::instance()->lightBumpFrontLeftSignal()->value();
+	return Create::instance()->lightBumpFrontLeftSignal()->value();
 }
-
 
 int get_create_lclightbump_amt()
 {
-  return Create::instance()->lightBumpCenterLeftSignal()->value();
+	return Create::instance()->lightBumpCenterLeftSignal()->value();
 }
 
 int get_create_rlightbump_amt()
 {
-  return Create::instance()->lightBumpRightSignal()->value();
+	return Create::instance()->lightBumpRightSignal()->value();
 }
-
 
 int get_create_rflightbump_amt()
 {
-  return Create::instance()->lightBumpFrontRightSignal()->value();
+	return Create::instance()->lightBumpFrontRightSignal()->value();
 }
-
 
 int get_create_rclightbump_amt()
 {
-  return Create::instance()->lightBumpCenterRightSignal()->value();
+	return Create::instance()->lightBumpCenterRightSignal()->value();
 }
 
 int get_create_vwall()
@@ -257,22 +250,22 @@ int get_create_rcliff_amt()
 
 int get_create_song_number()
 {
-    return Create::instance()->songNumber()->value();
+	return Create::instance()->songNumber()->value();
 }
 
 int get_create_song_playing()
 {
-  	return Create::instance()->songPlaying()->value();
+	return Create::instance()->songPlaying()->value();
 }
 
 void set_create_baud_rate(const enum BaudRate baudRate)
 {
-  Create::instance()->setDefaultBaudRate(static_cast<Create::BaudRate>(baudRate));
+	Create::instance()->setDefaultBaudRate(static_cast<Create::BaudRate>(baudRate));
 }
 
 enum BaudRate get_create_baud_rate()
 {
-  return static_cast<BaudRate>(Create::instance()->defaultBaudRate());
+	return static_cast<BaudRate>(Create::instance()->defaultBaudRate());
 }
 
 void create_stop()
@@ -310,21 +303,21 @@ void create_spin_block(int speed, int angle)
 	Create::instance()->turn(angle, speed);
 }
 
-int _create_get_raw_encoders(long *lenc, long *renc)
+int _create_get_raw_encoders(int16_t *lenc, int16_t *renc)
 {
 	*lenc = Create::instance()->sensorPacket101()->leftEncoderCounts[0] << 8 | Create::instance()->sensorPacket101()->leftEncoderCounts[1];
 	*renc = Create::instance()->sensorPacket101()->rightEncoderCounts[0] << 8 | Create::instance()->sensorPacket101()->rightEncoderCounts[1];
 	return 1;
 }
 
-int create_load_song(const unsigned char* song, const unsigned char length, const unsigned char num)
+int create_load_song(const unsigned char *song, const unsigned char length, const unsigned char num)
 {
-  return Create::instance()->loadSong(song, length, num) ? 1 : 0;
+	return Create::instance()->loadSong(song, length, num) ? 1 : 0;
 }
 
 int create_play_song(const unsigned char num)
 {
-  return Create::instance()->playSong(num) ? 1 : 0;
+	return Create::instance()->playSong(num) ? 1 : 0;
 }
 
 int create_read_block(char *data, int count)
