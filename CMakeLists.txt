@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.0)
 
 project(libwallaby)
 
@@ -69,11 +69,8 @@ file(GLOB WPACLI_UTILS ${WPACLI}/utils/*.c)
 
 
 # C++11
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -std=c++11")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
 
 # REMOVE ME
 include_directories(${SRC}/pixeltoaster)
@@ -207,15 +204,18 @@ endif()
 
 # Executables: test programs
 # TODO: use a list and foreach to make this more concise
-set(TESTS )
+option(build_tests "build_tests" OFF)
+if (${build_tests})
+  set(TESTS )
 
-foreach(C_TEST ${C_TESTS})
-  get_filename_component(C_TEST_NAME ${C_TEST} NAME_WE)
-  set(TEST_BIN_NAME ${C_TEST_NAME}_c)
-  add_executable(${TEST_BIN_NAME} ${C_TEST})
-  target_link_libraries(${TEST_BIN_NAME} kipr)
-  list(APPEND TESTS ${TEST_BIN_NAME})
-endforeach()
+  foreach(C_TEST ${C_TESTS})
+    get_filename_component(C_TEST_NAME ${C_TEST} NAME_WE)
+    set(TEST_BIN_NAME ${C_TEST_NAME}_c)
+    add_executable(${TEST_BIN_NAME} ${C_TEST})
+    target_link_libraries(${TEST_BIN_NAME} kipr)
+    list(APPEND TESTS ${TEST_BIN_NAME})
+  endforeach()
+endif()
 
 
 ########################################
