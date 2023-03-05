@@ -17,8 +17,10 @@
 
 #include "export.h"
 #include "vtable.h"
+#include <cstdint>
 
 #ifdef __cplusplus
+#include <stdint.h>
 extern "C" {
 #endif
 
