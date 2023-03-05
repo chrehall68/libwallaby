@@ -594,7 +594,7 @@ VF EXPORT_SYM void create_spin_block(int speed, int angle);
 /*!
  * \ingroup create
  */
-VF EXPORT_SYM int _create_get_raw_encoders(long *lenc, long *renc);
+VF EXPORT_SYM int _create_get_raw_encoders(int16_t *lenc, int16_t *renc);
 
 /*!
  * \ingroup create
