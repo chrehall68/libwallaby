@@ -17,17 +17,17 @@ namespace
 
 short kipr::accel::accel_x()
 {
-  return static_cast<signed short>(Platform::instance()->readRegister16b(REG_RW_ACCEL_X_H)) / 16 - Biasx;
+  return static_cast<signed short>(Platform::instance()->readRegister16b(REG_RW_ACCEL_X_H)) - Biasx;
 }
 
 short kipr::accel::accel_y()
 {
-  return static_cast<signed short>(Platform::instance()->readRegister16b(REG_RW_ACCEL_Y_H)) / 16 - Biasy;
+  return static_cast<signed short>(Platform::instance()->readRegister16b(REG_RW_ACCEL_Y_H)) - Biasy;
 }
 
 short kipr::accel::accel_z()
 {
-  return static_cast<signed short>(Platform::instance()->readRegister16b(REG_RW_ACCEL_Z_H)) / 16 - Biasz;
+  return static_cast<signed short>(Platform::instance()->readRegister16b(REG_RW_ACCEL_Z_H)) - Biasz;
 }
 
 // Simple low-pass filter for accelerometer
