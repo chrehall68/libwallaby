@@ -21,19 +21,19 @@ namespace Private
 //Pulls gyroscope data from the I2C registers. The MPU 9250 outputs high and low registers that need to be combined.
 short gyro_x(unsigned char * alt_read_buffer)
 {
-   return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_GYRO_X_H, alt_read_buffer))/16-biasx;
+   return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_GYRO_X_H, alt_read_buffer))-biasx;
 }
 	
 //Pulls gyroscope data from the I2C registers. The MPU 9250 outputs high and low registers that need to be combined.
 short gyro_y(unsigned char * alt_read_buffer)
 {
-    return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_GYRO_Y_H, alt_read_buffer))/16-biasy;
+    return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_GYRO_Y_H, alt_read_buffer))-biasy;
 }
 	
 //Pulls gyroscope data from the I2C registers. The MPU 9250 outputs high and low registers that need to be combined.
 short gyro_z(unsigned char * alt_read_buffer)
 {
-    return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_GYRO_Z_H, alt_read_buffer))/16-biasz;
+    return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_GYRO_Z_H, alt_read_buffer))-biasz;
 }
 
 //Simple low-pass filter for gyroscope

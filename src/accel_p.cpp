@@ -17,17 +17,17 @@ namespace Private
 
 short accel_x(unsigned char * alt_read_buffer)
 {
-    return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_ACCEL_X_H, alt_read_buffer))/16-Biasx;
+    return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_ACCEL_X_H, alt_read_buffer))-Biasx;
 }
 
 short accel_y(unsigned char * alt_read_buffer)
 {
-	return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_ACCEL_Y_H, alt_read_buffer))/16-Biasy;
+	return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_ACCEL_Y_H, alt_read_buffer))-Biasy;
 }
 
 short accel_z(unsigned char * alt_read_buffer)
 {
-	return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_ACCEL_Z_H, alt_read_buffer))/16-Biasz;
+	return static_cast<signed short>(Private::Wallaby::instance()->readRegister16b(REG_RW_ACCEL_Z_H, alt_read_buffer))-Biasz;
 }
 
 //Simple low-pass filter for accelerometer
