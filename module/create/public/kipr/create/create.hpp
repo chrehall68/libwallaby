@@ -11,11 +11,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
+#include <mutex>
 
 #ifndef WIN32
 #include <sys/time.h>
 #include <termios.h>
-#include <pthread.h>
 #else
 #include <time.h>
 #include <winsock2.h>
@@ -475,20 +475,6 @@ namespace kipr
       const CreatePackets::_5 *sensorPacket5();
       const CreatePackets::_101 *sensorPacket101();
 
-      inline void beginAtomicOperation()
-      {
-#ifndef WIN32
-        pthread_mutex_lock(&m_mutex);
-#endif
-      }
-
-      inline void endAtomicOperation()
-      {
-#ifndef WIN32
-        pthread_mutex_unlock(&m_mutex);
-#endif
-      }
-
       inline void setDefaultBaudRate(const BaudRate defaultBaudRate) { m_defaultBaudRate = defaultBaudRate; }
       inline BaudRate defaultBaudRate() const { return m_defaultBaudRate; }
 
@@ -631,9 +617,6 @@ namespace kipr
       size_t m_i;
       CreateScript m_script;
       int m_tty;
-#ifndef WIN32
-      pthread_mutex_t m_mutex;
-#endif
 
       BaudRate m_defaultBaudRate;
     };

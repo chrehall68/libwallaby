@@ -28,6 +28,9 @@ using kipr::sensor::Sensor;
 
 #define SHORT_FROM_BYTES(high, low) ((short)(((high) << 8) | (low)))
 #define SHORT(array) SHORT_FROM_BYTES(array[0], array[1])
+#define MODE_SET_LEDS true
+
+std::mutex create_mutex; // mutex that will be used for the create
 
 template <typename T>
 T *construct(T *dummy, const Create *parent)
@@ -737,9 +740,6 @@ Create::~Create()
   lazyDelete(m_wheelDropCaster);
   lazyDelete(m_songPlaying);
   lazyDelete(m_songNumber);
-#ifndef WIN32
-  pthread_mutex_destroy(&m_mutex);
-#endif
 }
 
 // TODO: Clean this up
@@ -818,31 +818,49 @@ void Create::setPassiveMode()
 {
   if (!isConnected())
     return;
-  beginAtomicOperation();
-  start();
-  endAtomicOperation();
-  setLeds(true, false, 255, 255);
+  else
+  {
+    start();
+  }
+
+  if (MODE_SET_LEDS)
+  {
+    // release so that setLeds can use it
+    setLeds(true, false, 255, 255);
+  }
 }
 
 void Create::setSafeMode()
 {
   if (!isConnected())
     return;
-  beginAtomicOperation();
-  write(OI_SAFE);
-  endAtomicOperation();
-  setLeds(true, true, 127, 255);
+  else
+  {
+    std::lock_guard<std::mutex> create_lock(create_mutex);
+    write(OI_SAFE);
+  }
+  if (MODE_SET_LEDS)
+  {
+    // release so that setLeds can use it
+    setLeds(true, true, 127, 255);
+  }
 }
 
 void Create::setFullMode()
 {
   if (!isConnected())
     return;
-  std::lock_guard<std::mutex> lock(core::cleanup_mutex);
-  beginAtomicOperation();
-  write(OI_FULL);
-  endAtomicOperation();
-  setLeds(true, true, 255, 255);
+  else
+  {
+    std::lock_guard<std::mutex> lock(core::cleanup_mutex);
+    std::lock_guard<std::mutex> create_lock(create_mutex);
+    write(OI_FULL);
+  }
+  if (MODE_SET_LEDS)
+  {
+    // release so that setLeds can use it
+    setLeds(true, true, 255, 255);
+  }
 }
 
 void Create::setMode(const Create::Mode &mode)
@@ -864,7 +882,7 @@ void Create::setMode(const Create::Mode &mode)
 
 Create::Mode Create::mode()
 {
-  beginAtomicOperation();
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   write(OI_SENSORS);
   write(35);
   short state = 0;
@@ -876,7 +894,6 @@ Create::Mode Create::mode()
     if (state < 0)
       return OffMode;
   } while (state == 0 && tries);
-  endAtomicOperation();
 
   if (!tries)
     return OffMode;
@@ -1003,7 +1020,8 @@ void Create::setLeds(const bool &advance, const bool &play, const unsigned char 
 {
   if (!isConnected())
     return;
-  beginAtomicOperation();
+
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   write(OI_LEDS);
   unsigned char packed = 0;
   if (advance)
@@ -1013,7 +1031,6 @@ void Create::setLeds(const bool &advance, const bool &play, const unsigned char 
   write(packed);
   write(color);
   write(brightness);
-  endAtomicOperation();
 }
 
 void Create::drive(const short &velocity, const short &radius)
@@ -1021,7 +1038,7 @@ void Create::drive(const short &velocity, const short &radius)
   if (!isConnected())
     return;
   std::lock_guard<std::mutex> lock(core::cleanup_mutex);
-  beginAtomicOperation();
+  std::lock_guard<std::mutex> create_lock(create_mutex);
 
   write(OI_DRIVE);
   write(HIGH_BYTE(velocity));
@@ -1033,8 +1050,6 @@ void Create::drive(const short &velocity, const short &radius)
   m_state.leftVelocity = -velocity;
   m_state.rightVelocity = velocity;
   updateState();
-
-  endAtomicOperation();
 }
 
 void Create::driveDirect(const short &left, const short &right)
@@ -1042,7 +1057,7 @@ void Create::driveDirect(const short &left, const short &right)
   if (!isConnected())
     return;
   std::lock_guard<std::mutex> lock(core::cleanup_mutex);
-  beginAtomicOperation();
+  std::lock_guard<std::mutex> create_lock(create_mutex);
 
   write(OI_DRIVE_DIRECT);
   write(HIGH_BYTE(right));
@@ -1055,8 +1070,6 @@ void Create::driveDirect(const short &left, const short &right)
   m_state.rightVelocity = right;
 
   updateState();
-
-  endAtomicOperation();
 }
 
 void Create::driveStraight(const short &speed)
@@ -1070,7 +1083,7 @@ void Create::stop()
   if (!isConnected())
     return;
 
-  beginAtomicOperation();
+  std::lock_guard<std::mutex> create_lock(create_mutex);
 
   write(OI_DRIVE_DIRECT);
   write(HIGH_BYTE(0));
@@ -1083,8 +1096,6 @@ void Create::stop()
   m_state.rightVelocity = 0;
 
   updateState();
-
-  endAtomicOperation();
 }
 
 void Create::turn(const short &angle, const unsigned short &speed)
@@ -1147,7 +1158,7 @@ bool Create::setBaudRate(const unsigned char &baudCode)
   if (!isConnected() || baudCode >= 12)
     return false;
 
-  beginAtomicOperation();
+  std::lock_guard<std::mutex> create_lock(create_mutex);
 
   // Tell the create to update its baud rate
   write(OI_BAUD);
@@ -1155,8 +1166,6 @@ bool Create::setBaudRate(const unsigned char &baudCode)
 
   // Update our baud rate
   setLocalBaudRate(baudCodeRate[baudCode]);
-
-  endAtomicOperation();
 
   return true;
 }
@@ -1359,9 +1368,6 @@ Create::Create()
       m_songPlaying(0),
       m_songNumber(0)
 {
-#ifndef WIN32
-  pthread_mutex_init(&m_mutex, 0);
-#endif
   memset(&m_state, 0, sizeof(CreateState));
 
   // TODO: this is a hack to make sure the Wallaby signal handler is registered
@@ -1398,9 +1404,8 @@ bool Create::start()
   if (!isConnected())
     return false;
 
-  beginAtomicOperation();
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   const bool ret = write(OI_START);
-  endAtomicOperation();
 
   return ret;
 }
@@ -1410,13 +1415,12 @@ bool Create::open()
   if (isConnected())
     return false;
 
-  beginAtomicOperation();
+  std::lock_guard<std::mutex> create_lock(create_mutex);
 #ifndef WIN32
   m_tty = ::open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NONBLOCK);
 #else
 #pragma message("Create library not yet implemented for Windows")
 #endif
-  endAtomicOperation();
 
   if (m_tty < 0)
     perror("Create::open");
@@ -1428,12 +1432,11 @@ void Create::close()
 {
   if (!m_tty)
     return;
-  beginAtomicOperation();
+  std::lock_guard<std::mutex> create_lock(create_mutex);
 #ifndef WIN32
   ::close(m_tty);
 #endif
   m_tty = 0;
-  endAtomicOperation();
 }
 
 void Create::updateState()
@@ -1458,22 +1461,21 @@ void Create::updateSensorPacket1()
 {
   if (have_packet[0] && !hasRequiredTimePassed(timestamps[0]))
     return;
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   flush();
-  beginAtomicOperation();
   write(OI_SENSORS);
   write(1);
   blockingRead(m_1);
   timestamps[0] = timeOfDay();
   have_packet[0] = true;
-  endAtomicOperation();
 }
 
 void Create::updateSensorPacket2(bool forceUpdate)
 {
   if (have_packet[1] && !forceUpdate && !hasRequiredTimePassed(timestamps[1]))
     return;
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   flush();
-  beginAtomicOperation();
   write(OI_SENSORS);
   write(2);
   blockingRead(m_2);
@@ -1481,61 +1483,56 @@ void Create::updateSensorPacket2(bool forceUpdate)
   have_packet[1] = true;
   m_state.distance += SHORT(m_2.distance);
   m_state.angle += SHORT(m_2.angle);
-  endAtomicOperation();
 }
 
 void Create::updateSensorPacket3()
 {
   if (have_packet[2] && !hasRequiredTimePassed(timestamps[2]))
     return;
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   flush();
-  beginAtomicOperation();
   write(OI_SENSORS);
   write(3);
   blockingRead(m_3);
   timestamps[2] = timeOfDay();
   have_packet[2] = true;
-  endAtomicOperation();
 }
 
 void Create::updateSensorPacket4()
 {
   if (have_packet[3] && !hasRequiredTimePassed(timestamps[3]))
     return;
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   flush();
-  beginAtomicOperation();
   write(OI_SENSORS);
   write(4);
   blockingRead(m_4);
   timestamps[3] = timeOfDay();
   have_packet[3] = true;
-  endAtomicOperation();
 }
 
 void Create::updateSensorPacket5()
 {
   if (have_packet[4] && !hasRequiredTimePassed(timestamps[4]))
     return;
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   flush();
-  beginAtomicOperation();
   write(OI_SENSORS);
   write(5);
   blockingRead(m_5);
   timestamps[4] = timeOfDay();
   have_packet[4] = true;
-  endAtomicOperation();
 }
 
 void Create::updateSensorPacket101()
 {
   if (have_packet[5] && !hasRequiredTimePassed(timestamps[5]))
     return;
+  std::lock_guard<std::mutex> create_lock(create_mutex);
   flush();
-  beginAtomicOperation();
   write(OI_SENSORS);
   write(101);
   blockingRead(m_101);
   timestamps[5] = timeOfDay();
   have_packet[5] = true;
-  endAtomicOperation();
 }
