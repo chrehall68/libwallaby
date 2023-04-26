@@ -15,7 +15,7 @@ if (EMSCRIPTEN)
   option(wasm "Build for WASM dynamic linking" OFF)
 endif()
 
-include_directories(/usr/include/opencv4/)
+include_directories(${CMAKE_SYSROOT}/usr/include/opencv4/)
 
 function(gather_module_objects OUT)
   get_property(KIPR_MODULES GLOBAL PROPERTY kipr_modules)
@@ -96,9 +96,9 @@ if (TARGET kipr_python)
   target_link_libraries(kipr PRIVATE kipr_python)
 endif()
 
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ DESTINATION include)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include PATTERN "*.in" EXCLUDE)
-install(TARGETS kipr DESTINATION lib)
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include PATTERN "*.in" EXCLUDE)
+install(TARGETS kipr DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 add_subdirectory(documentation)
 
@@ -109,4 +109,5 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "KISS Institute for Practical Robotics")
 set(CPACK_PACKAGE_VERSION_MAJOR ${KIPR_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${KIPR_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${KIPR_VERSION_PATCH})
+set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 include(CPack)
