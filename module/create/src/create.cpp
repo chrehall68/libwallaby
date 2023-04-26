@@ -18,6 +18,23 @@
 #include <cstring>
 #include <iostream>
 
+#ifdef CREATE_EMSCRIPTEN_JS
+#include "emscripten.h"
+#endif
+
+#ifdef CREATE_EMSCRIPTEN_JS
+namespace
+{
+  EM_JS(void, jsCreateWrite, (unsigned char value), {
+    Module.context.createWrite(value);
+  });
+
+  EM_JS(short, jsCreateRead, (), {
+    return Module.context.createRead();
+  });
+}
+#endif
+
 using namespace kipr;
 using namespace kipr::create;
 
@@ -926,9 +943,7 @@ bool Create::write(const unsigned char *data, const size_t &len)
 {
   if (!m_tty)
     return false;
-#ifndef CREATE_NETWORK
-    // Create serial
-#ifndef WIN32
+#ifndef CREATE_EMSCRIPTEN_JS
   unsigned tries = 5;
   size_t off = 0;
   do
@@ -950,10 +965,9 @@ bool Create::write(const unsigned char *data, const size_t &len)
   tcdrain(m_tty);
   return off == len;
 #else
-#pragma message("Create library not yet implemented for Windows")
-#endif
-#else
-    // Create network
+  for (size_t i = 0; i < len; ++i)
+    jsCreateWrite(data[i]);
+  return true;
 #endif
 }
 
@@ -961,7 +975,7 @@ void Create::flush()
 {
   if (!isConnected())
     return;
-#ifndef WIN32
+#ifndef CREATE_EMSCRIPTEN_JS
   tcflush(m_tty, TCIOFLUSH);
 #endif
 }
@@ -970,6 +984,7 @@ short Create::read()
 {
   if (!isConnected())
     return 0xFFFF;
+
   unsigned char ret = 0;
   return read(&ret, 1) == 1 ? ret : -1;
 }
@@ -979,11 +994,19 @@ int Create::read(unsigned char *data, const size_t &len)
   if (!isConnected())
     return 0;
   int ret = 0;
-#ifndef WIN32
-  ret = ::read(m_tty, data, len);
+
+#ifdef CREATE_EMSCRIPTEN_JS
+  short value = 0;
+  while ((value = jsCreateRead()) >= 0 && ret < len)
+  {
+    *data = value;
+    ++data;
+    ++ret;
+  }
 #else
-#pragma message("Create library not yet implemented for Windows")
+  ret = ::read(m_tty, data, len);
 #endif
+
   if (ret < 0 && errno != EAGAIN)
     perror("::read");
   return ret;
@@ -1416,24 +1439,27 @@ bool Create::open()
     return false;
 
   std::lock_guard<std::mutex> create_lock(create_mutex);
-#ifndef WIN32
+#ifndef CREATE_EMSCRIPTEN_JS
   m_tty = ::open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NONBLOCK);
-#else
-#pragma message("Create library not yet implemented for Windows")
-#endif
 
   if (m_tty < 0)
     perror("Create::open");
 
   return m_tty >= 0;
+#else
+  // dummy tty
+  m_tty = 1;
+  return true;
+#endif
 }
 
 void Create::close()
 {
+
   if (!m_tty)
     return;
   std::lock_guard<std::mutex> create_lock(create_mutex);
-#ifndef WIN32
+#ifndef CREATE_EMSCRIPTEN_JS
   ::close(m_tty);
 #endif
   m_tty = 0;
